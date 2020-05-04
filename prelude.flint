@@ -1,0 +1,31 @@
+# higher-level dips
+op dip2 = 'dip cons dip
+op dip3 = 'dip cons dip2
+
+# take a number of elems from a list
+op take = [] 'cons rolldown times
+
+# list length functions
+op length = [pop 1 +] swap 0 swap fold
+op small = length 2 <
+
+# append 2 lists
+op append = quote ~
+
+# concatenate 2 lists with an element in the middle
+op enconcat = 'cons dip swap ~
+
+# apply a quote to 2 elements of the stack
+op app2 = dup 'swap dip unary 'unary dip
+
+# recursive combinators
+op genrec = 4 take dup unquote ['rolldown dip swap] dip ['genrec ~ quote ~] dip ~ ifte
+op linrec = 'unquote swap ~ genrec
+op binrec = 'app2 swap ~ genrec
+op tailrec = [] linrec
+
+# higher-order list functions
+op split = dup 'not ~ ['filter cons] app2 cleave
+op fold = [dup null] [pop 'pop dip] [uncons 'rollup dip 'dup dip2] [rollup 2 n-ary] linrec
+op map = [uncons swap] swap ~ 'swap ~ [dup null] [pop []] rolldown 'cons linrec
+op filter = swap [] swap ['dup swap ~ 'unary cons [[swap cons] 'pop ifte] cons] dip2 fold

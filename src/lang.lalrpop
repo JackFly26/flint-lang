@@ -1,0 +1,40 @@
+use crate::ast::{OpType, Val, Program, self};
+use std::path::Path;
+
+grammar;
+
+match {
+	r"[-+]?(\d*\.)?\d+([eE][-+]?\d+)?" => Number,
+	"[",
+	"]",
+	"=",
+    "op",
+    "import",
+	r#""[^"]*""#
+} else {
+	r#"[^\s"'\[\]][^\s"\[\]]*"# => Ident,
+	r"#[^\n]*\n" => {},
+	r"\s*" => {},
+	_
+}
+pub Program: Program<'input> = {
+	Import* QuoteBody Op* => Program(<>)
+};
+
+Import: &'input Path = {
+	"import" <Str> => Path::new(<>)
+};
+
+QuoteBody = Val*;
+Val: Val = {
+	Number => Val::Num(<>.parse().unwrap()),
+	"[" <QuoteBody> "]" => Val::Quote(<>),
+	Ident => Val::Operator(<>.to_string()),
+	"'" <Val> => Val::Quote(vec![<>]),
+	<str: Str> => ast::create_string(str.to_string()),
+	r"'[^']'" => Val::Char(<>.chars().nth(1).unwrap())
+};
+
+Str: &'input str = <s: r#""[^"]*""#> => &s[1..s.len()-1];
+
+Op: (&'input str, OpType) = "op" <name: Ident> "=" <body: QuoteBody> => (name, OpType::UserDefined(body));
